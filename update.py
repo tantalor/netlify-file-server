@@ -188,9 +188,22 @@ def export_grants(conn):
   # We also need to dump out all the API Keys, because even users without
   # a specific grant can still access the public files.
   cursor.execute('''SELECT api_key FROM users''')
-  api_keys = list(cursor.fetchall())
+  api_keys = [row[0] for row in cursor.fetchall()]
+  
+  return json.dumps({'api_keys': api_keys, 'public_files': list(public_files), 'grants': grants})
 
-  print(json.dumps({'api_keys': list(api_keys), 'public_files': list(public_files), 'grants': grants}))
+
+def print_export(conn):
+  print(export_grants(conn))
+
+
+def build_edge_function(conn):
+  grants_json = export_grants(conn)
+  with open('site/netlify/edge-functions/auth-check.ts.tmpl', 'r') as f:
+    file_content = f.read()
+  file_content = file_content.replace("{{EXPORTED}}", grants_json)
+  with open('site/netlify/edge-functions/auth-check.ts', 'w') as f:
+    f.write(file_content)
 
 
 def new_key(conn, user_spec):
@@ -210,7 +223,6 @@ def new_key(conn, user_spec):
   cursor.execute("UPDATE users SET api_key = ? WHERE id = ?", (new_api_key, user.user_id))
   conn.commit()
   print(f"New key generated for user '{user.email}'. New API Key: {new_api_key}")
-
 
 
 def generate_api_key():
@@ -254,6 +266,9 @@ def help():
     
   export
     Export granted permissions for serving.
+
+  build
+    Build the site for serving, by updating the permissions data in edge function.
   """)
   
 
@@ -271,7 +286,9 @@ def main():
   elif args[0] == 'print':
     print_grants(conn)
   elif args[0] == 'export':
-    export_grants(conn)
+    print_export(conn)
+  elif args[0] == 'build':
+    build_edge_function(conn)
   elif args[0] == 'add_grant':
     if len(args) == 3:
       add_grant(conn, args[1], args[2])

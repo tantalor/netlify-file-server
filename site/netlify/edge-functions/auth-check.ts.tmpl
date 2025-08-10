@@ -1,0 +1,44 @@
+import type { Context } from "netlify:edge";
+
+const EXPORT = {{EXPORTED}};
+
+const API_KEYS = EXPORT['api_keys'];
+const PUBLIC_FILES = EXPORT['public_files'];
+const GRANTS = EXPORT['grants'];
+
+export default async (request: Request, context: Context) => {
+  // 1. Parse the request URI to get the API key and File Path
+  const url = new URL(request.url);
+  const apiKey = url.searchParams.get("api_key");
+  const filePath = url.pathname.replace("/data/", "");
+
+  // 2. Validate the API key against the hard-coded list
+  if (!apiKey || !API_KEYS.includes(apiKey)) {
+    // 3. If the key is invalid, reject the request with a 401 response
+    return new Response("Unauthorized: Invalid or missing API key.", {
+      status: 401
+    });
+  }
+
+  // 3. If the file is not a public file, then check it against the grants.
+  if (!PUBLIC_FILES.includes(filePath)) {
+    let found = false;
+    for (const grant of GRANTS) {
+      if (grant[0] == apiKey && grant[1] == filePath) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      return new Response("Unauthorized: Invalid or missing API key.", {
+        status: 401
+      });
+    } 
+  }
+
+  // Log the successful usage.
+  console.log(request.url);
+
+  // 4. If the key is valid, allow the request to proceed
+  return context.next();
+};
