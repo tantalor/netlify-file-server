@@ -71,9 +71,6 @@ def lookup_user(conn, user_spec):
     user_row = cursor.fetchone()
     if user_row:
       return User(*user_row)
-    else:
-      print(f"Error: User with email '{user_spec}' not found.")
-      return
 
   # Find the user's ID using their API key.
   if user_spec != 'all':
@@ -81,12 +78,7 @@ def lookup_user(conn, user_spec):
     user_row = cursor.fetchone()
     if user_row:
       return User(*user_row)
-    else:
-      print(f"Error: User with api key '{user_spec}' not found.")
-      return
 
-  print(f"Error: failed to lookup user '{user_spec}'")
-  
 
 def add_grant_if_not_exists(conn, user_spec, filepath):
   """
@@ -212,8 +204,11 @@ def new_key(conn, user_spec):
   """
   user = lookup_user(conn, user_spec)
   if not user:
+    if '@' in user_spec:
+      add_user_if_not_exists(conn, user_spec)
+    else:
       print(f"Error: unknown user")
-      return
+    return
 
   # Generate a new API key
   new_api_key = generate_api_key()
