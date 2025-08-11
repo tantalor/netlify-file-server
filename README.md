@@ -69,3 +69,19 @@ or,
 ```
 apt install sqlite3
 ```
+
+# Netlify limits
+
+For edge functions:
+
+ * Code size limit: 20 MB after compression
+ * Memory per set of deployed edge functions: 512 MB
+ * CPU execution time per request: 50 ms
+
+https://docs.netlify.com/build/edge-functions/limits/
+
+For "Free plan":
+
+* Generous monthly limits: Each month receives 100 GB bandwidth, 300 build minutes, 125,000 function and 1 million edge function invocations, 10 GB storage, and more.
+
+https://www.netlify.com/blog/introducing-netlify-free-plan/
