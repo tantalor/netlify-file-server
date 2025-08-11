@@ -1,11 +1,15 @@
 from collections import namedtuple
 import json
+import os
 import secrets
 import sqlite3
 import sys
 
 
 User = namedtuple('User', ['user_id', 'email', 'api_key'])
+
+
+MAX_EDGE_FUNCTION_SIZE_BYTES = 20000000 # 20 MB
 
 
 def init_db():
@@ -196,6 +200,9 @@ def build_edge_function(conn):
   file_content = file_content.replace("{{EXPORTED}}", grants_json)
   with open('site/netlify/edge-functions/auth-check.ts', 'w') as f:
     f.write(file_content)
+  file_size_bytes = os.path.getsize('site/netlify/edge-functions/auth-check.ts')
+  percent_of_max = file_size_bytes / MAX_EDGE_FUNCTION_SIZE_BYTES
+  print(f"file size: {file_size_bytes} bytes, {percent_of_max:.3%} of max ({MAX_EDGE_FUNCTION_SIZE_BYTES})")
 
 
 def new_key(conn, user_spec):
@@ -226,10 +233,10 @@ def generate_api_key():
   
 
 def test(conn):
-  add_grant(conn, "bob@example.com", "test1.csv")
-  add_grant(conn, "alice@example.com", "test2.csv")
-  add_grant(conn, "all", "test3.csv")
-
+  for n in range(0, 10):
+    add_grant(conn, "all", "test.csv")
+    for k in range(0, 100):
+      add_grant(conn, f"test{k}@example.com", "test{n}.csv")
 
 def help():
   print("""Commands:
